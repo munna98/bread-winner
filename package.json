@@ -14,7 +14,8 @@
     "electron:build": "npm run build && electron-builder",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
