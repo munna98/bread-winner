@@ -1,0 +1,395 @@
+    // This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      UserRole @default(ADMIN)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  salesBills     SalesBill[]
+  salesOrders    SalesOrder[]
+  purchases      Purchase[]
+  expenses       Expense[]
+  productionLogs ProductionLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  CASHIER
+  MANAGER
+  ACCOUNTANT
+}
+
+// Customer Management
+model Customer {
+  id            String   @id @default(cuid())
+  name          String
+  phone         String?
+  email         String?
+  address       String?
+  gstNumber     String?
+  openingBalance Decimal @default(0) @db.Decimal(10, 2)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  salesBills  SalesBill[]
+  salesOrders SalesOrder[]
+  ledgerEntries LedgerEntry[]
+
+  @@map("customers")
+}
+
+// Supplier Management
+model Supplier {
+  id            String   @id @default(cuid())
+  name          String
+  phone         String?
+  email         String?
+  address       String?
+  gstNumber     String?
+  openingBalance Decimal @default(0) @db.Decimal(10, 2)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  purchases     Purchase[]
+  ledgerEntries LedgerEntry[]
+
+  @@map("suppliers")
+}
+
+// Product Management
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  category    String?
+  unit        String   @default("pcs") // pcs, kg, dozen, etc.
+  sellingPrice Decimal @db.Decimal(8, 2)
+  costPrice   Decimal? @db.Decimal(8, 2)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  salesBillItems  SalesBillItem[]
+  salesOrderItems SalesOrderItem[]
+  purchaseItems   PurchaseItem[]
+  productionLogs  ProductionLog[]
+
+  @@map("products")
+}
+
+// Sales Bill Management
+model SalesBill {
+  id          String      @id @default(cuid())
+  billNumber  String      @unique
+  billDate    DateTime    @default(now())
+  customerId  String?
+  customer    Customer?   @relation(fields: [customerId], references: [id])
+  subtotal    Decimal     @db.Decimal(10, 2)
+  discount    Decimal     @default(0) @db.Decimal(10, 2)
+  taxAmount   Decimal     @default(0) @db.Decimal(10, 2)
+  total       Decimal     @db.Decimal(10, 2)
+  paidAmount  Decimal     @default(0) @db.Decimal(10, 2)
+  balanceAmount Decimal   @default(0) @db.Decimal(10, 2)
+  paymentMode PaymentMode @default(CASH)
+  notes       String?
+  status      BillStatus  @default(COMPLETED)
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  items         SalesBillItem[]
+  ledgerEntries LedgerEntry[]
+
+  @@map("sales_bills")
+}
+
+model SalesBillItem {
+  id          String    @id @default(cuid())
+  salesBillId String
+  salesBill   SalesBill @relation(fields: [salesBillId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Decimal   @db.Decimal(8, 3)
+  rate        Decimal   @db.Decimal(8, 2)
+  discount    Decimal   @default(0) @db.Decimal(8, 2)
+  amount      Decimal   @db.Decimal(10, 2)
+
+  @@map("sales_bill_items")
+}
+
+// Sales Order Management
+model SalesOrder {
+  id          String       @id @default(cuid())
+  orderNumber String       @unique
+  orderDate   DateTime     @default(now())
+  deliveryDate DateTime?
+  customerId  String
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  subtotal    Decimal      @db.Decimal(10, 2)
+  discount    Decimal      @default(0) @db.Decimal(10, 2)
+  taxAmount   Decimal      @default(0) @db.Decimal(10, 2)
+  total       Decimal      @db.Decimal(10, 2)
+  notes       String?
+  status      OrderStatus  @default(PENDING)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  items SalesOrderItem[]
+
+  @@map("sales_orders")
+}
+
+model SalesOrderItem {
+  id           String     @id @default(cuid())
+  salesOrderId String
+  salesOrder   SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id])
+  quantity     Decimal    @db.Decimal(8, 3)
+  rate         Decimal    @db.Decimal(8, 2)
+  discount     Decimal    @default(0) @db.Decimal(8, 2)
+  amount       Decimal    @db.Decimal(10, 2)
+
+  @@map("sales_order_items")
+}
+
+// Purchase Management
+model Purchase {
+  id            String      @id @default(cuid())
+  purchaseNumber String     @unique
+  purchaseDate  DateTime    @default(now())
+  supplierId    String?
+  supplier      Supplier?   @relation(fields: [supplierId], references: [id])
+  subtotal      Decimal     @db.Decimal(10, 2)
+  discount      Decimal     @default(0) @db.Decimal(10, 2)
+  taxAmount     Decimal     @default(0) @db.Decimal(10, 2)
+  total         Decimal     @db.Decimal(10, 2)
+  paidAmount    Decimal     @default(0) @db.Decimal(10, 2)
+  balanceAmount Decimal     @default(0) @db.Decimal(10, 2)
+  paymentMode   PaymentMode @default(CASH)
+  billNumber    String?
+  notes         String?
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  items         PurchaseItem[]
+  ledgerEntries LedgerEntry[]
+
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id         String   @id @default(cuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id])
+  itemName   String // For non-product items
+  quantity   Decimal  @db.Decimal(8, 3)
+  rate       Decimal  @db.Decimal(8, 2)
+  discount   Decimal  @default(0) @db.Decimal(8, 2)
+  amount     Decimal  @db.Decimal(10, 2)
+
+  @@map("purchase_items")
+}
+
+// Expense Management
+model ExpenseCategory {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  expenses Expense[]
+
+  @@map("expense_categories")
+}
+
+model Expense {
+  id         String          @id @default(cuid())
+  date       DateTime        @default(now())
+  categoryId String
+  category   ExpenseCategory @relation(fields: [categoryId], references: [id])
+  amount     Decimal         @db.Decimal(10, 2)
+  description String
+  paymentMode PaymentMode    @default(CASH)
+  billNumber String?
+  notes      String?
+  userId     String
+  user       User            @relation(fields: [userId], references: [id])
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  // Relations
+  ledgerEntries LedgerEntry[]
+
+  @@map("expenses")
+}
+
+// Production Management
+model ProductionLog {
+  id         String   @id @default(cuid())
+  date       DateTime @default(now())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Decimal  @db.Decimal(8, 3)
+  notes      String?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("production_logs")
+}
+
+// Accounting System
+model Account {
+  id           String      @id @default(cuid())
+  name         String      @unique
+  accountType  AccountType
+  parentId     String?
+  parent       Account?    @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children     Account[]   @relation("AccountHierarchy")
+  openingBalance Decimal   @default(0) @db.Decimal(15, 2)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations
+  debitEntries  LedgerEntry[] @relation("DebitAccount")
+  creditEntries LedgerEntry[] @relation("CreditAccount")
+
+  @@map("accounts")
+}
+
+model LedgerEntry {
+  id            String     @id @default(cuid())
+  date          DateTime   @default(now())
+  voucherNumber String
+  voucherType   VoucherType
+  debitAccountId String
+  debitAccount  Account    @relation("DebitAccount", fields: [debitAccountId], references: [id])
+  creditAccountId String
+  creditAccount Account    @relation("CreditAccount", fields: [creditAccountId], references: [id])
+  amount        Decimal    @db.Decimal(15, 2)
+  narration     String
+  reference     String? // Reference to source document ID
+  
+  // Relations to source documents
+  customerId   String?
+  customer     Customer?  @relation(fields: [customerId], references: [id])
+  supplierId   String?
+  supplier     Supplier?  @relation(fields: [supplierId], references: [id])
+  salesBillId  String?
+  salesBill    SalesBill? @relation(fields: [salesBillId], references: [id])
+  purchaseId   String?
+  purchase     Purchase?  @relation(fields: [purchaseId], references: [id])
+  expenseId    String?
+  expense      Expense?   @relation(fields: [expenseId], references: [id])
+  
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("ledger_entries")
+}
+
+// Company Settings
+model CompanySettings {
+  id               String   @id @default(cuid())
+  companyName      String
+  address          String?
+  phone            String?
+  email            String?
+  gstNumber        String?
+  logo             String? // File path or base64
+  taxRate          Decimal  @default(0) @db.Decimal(5, 2)
+  currencySymbol   String   @default("₹")
+  printFormat      PrintFormat @default(A4)
+  enableGST        Boolean  @default(false)
+  enableProduction Boolean  @default(true)
+  enableOrders     Boolean  @default(true)
+  invoicePrefix    String   @default("INV")
+  orderPrefix      String   @default("ORD")
+  purchasePrefix   String   @default("PUR")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("company_settings")
+}
+
+// Enums
+enum PaymentMode {
+  CASH
+  CARD
+  UPI
+  BANK_TRANSFER
+  CREDIT
+}
+
+enum BillStatus {
+  DRAFT
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  FULFILLED
+  CANCELLED
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+enum VoucherType {
+  SALES
+  PURCHASE
+  PAYMENT
+  RECEIPT
+  JOURNAL
+  CONTRA
+}
+
+enum PrintFormat {
+  A4
+  THERMAL
+}
