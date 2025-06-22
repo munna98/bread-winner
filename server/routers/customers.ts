@@ -1,7 +1,7 @@
 // server/routers/customers.ts
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc'
-import { db } from '../db'
+import { prisma } from '../db'
 
 export const customersRouter = router({
   getAll: protectedProcedure
@@ -20,13 +20,13 @@ export const customersRouter = router({
       } : {}
 
       const [customers, total] = await Promise.all([
-        db.customer.findMany({
+        prisma.customer.findMany({
           where,
           skip: (input.page - 1) * input.limit,
           take: input.limit,
           orderBy: { name: 'asc' },
         }),
-        db.customer.count({ where })
+        prisma.customer.count({ where })
       ])
 
       return { customers, total, pages: Math.ceil(total / input.limit) }
@@ -35,7 +35,7 @@ export const customersRouter = router({
   getById: protectedProcedure
     .input(z.string())
     .query(async ({ input }) => {
-      return await db.customer.findUnique({
+      return await prisma.customer.findUnique({
         where: { id: input },
         include: {
           salesBills: {
@@ -55,7 +55,7 @@ export const customersRouter = router({
       openingBalance: z.number().default(0),
     }))
     .mutation(async ({ input }) => {
-      return await db.customer.create({
+      return await prisma.customer.create({
         data: {
           ...input,
           openingBalance: input.openingBalance,
@@ -75,7 +75,7 @@ export const customersRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input
-      return await db.customer.update({
+      return await prisma.customer.update({
         where: { id },
         data: {
           ...data,
@@ -87,7 +87,7 @@ export const customersRouter = router({
   delete: protectedProcedure
     .input(z.string())
     .mutation(async ({ input }) => {
-      return await db.customer.update({
+      return await prisma.customer.update({
         where: { id: input },
         data: { isActive: false }
       })

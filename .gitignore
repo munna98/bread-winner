@@ -1,0 +1,49 @@
+# Node modules
+**/node_modules/
+
+# Build outputs
+**/dist/
+**/out/
+**/build/
+**/.vite/
+**/.vite-cache/
+**/*.tsbuildinfo
+
+# Logs
+**/*.log
+**/logs/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Environment variables
+**/.env
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+.idea/
+
+# Lock files (optional — uncomment the one you don’t use)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Electron build artifacts
+apps/desktop/dist-electron/
+apps/desktop/electron/*.js
+apps/desktop/electron/*.js.map
+
+# Vite generated files
+apps/desktop/tailwind-output.css
+
+# Prisma
+apps/server/prisma/migration_lock.toml
+apps/server/prisma/dev.db
+apps/server/prisma/dev.db-journal
+
+# Keep migration SQLs but not dev artifacts
+!apps/server/prisma/migrations/*.sql

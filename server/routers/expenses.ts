@@ -1,12 +1,12 @@
 // server/routers/expenses.ts
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc'
-import { db } from '../db'
+import { prisma } from '../db'
 
 export const expensesRouter = router({
   getCategories: protectedProcedure
     .query(async () => {
-      return await db.expenseCategory.findMany({
+      return await prisma.expenseCategory.findMany({
         where: { isActive: true },
         orderBy: { name: 'asc' }
       })
@@ -17,7 +17,7 @@ export const expensesRouter = router({
       name: z.string().min(2),
     }))
     .mutation(async ({ input }) => {
-      return await db.expenseCategory.create({
+      return await prisma.expenseCategory.create({
         data: input
       })
     }),
@@ -42,7 +42,7 @@ export const expensesRouter = router({
       }
 
       const [expenses, total] = await Promise.all([
-        db.expense.findMany({
+        prisma.expense.findMany({
           where,
           include: {
             category: { select: { name: true } }
@@ -51,7 +51,7 @@ export const expensesRouter = router({
           take: input.limit,
           orderBy: { date: 'desc' },
         }),
-        db.expense.count({ where })
+        prisma.expense.count({ where })
       ])
 
       return { expenses, total, pages: Math.ceil(total / input.limit) }
@@ -67,7 +67,7 @@ export const expensesRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      return await db.expense.create({
+      return await prisma.expense.create({
         data: {
           ...input,
           userId: ctx.user.id,

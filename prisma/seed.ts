@@ -306,6 +306,7 @@ async function main() {
         create: [
           {
             productId: product1.id,
+            itemName: "Vellappam",
             quantity: 10,
             rate: 80.0,
             amount: 800.0,

@@ -1,7 +1,7 @@
 // server/routers/orders.ts
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc'
-import { db } from '../db'
+import { prisma } from '../db'
 
 const orderItemSchema = z.object({
   productId: z.string(),
@@ -31,7 +31,7 @@ export const ordersRouter = router({
       }
 
       const [orders, total] = await Promise.all([
-        db.salesOrder.findMany({
+        prisma.salesOrder.findMany({
           where,
           include: {
             customer: { select: { name: true } },
@@ -45,7 +45,7 @@ export const ordersRouter = router({
           take: input.limit,
           orderBy: { orderDate: 'desc' },
         }),
-        db.salesOrder.count({ where })
+        prisma.salesOrder.count({ where })
       ])
 
       return { orders, total, pages: Math.ceil(total / input.limit) }
@@ -63,10 +63,10 @@ export const ordersRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const settings = await db.companySettings.findFirst()
+      const settings = await prisma.companySettings.findFirst()
       const prefix = settings?.orderPrefix || 'ORD'
       
-      const lastOrder = await db.salesOrder.findFirst({
+      const lastOrder = await prisma.salesOrder.findFirst({
         orderBy: { orderNumber: 'desc' },
         where: { orderNumber: { startsWith: prefix } }
       })
@@ -79,7 +79,7 @@ export const ordersRouter = router({
 
       const orderNumber = `${prefix}${String(nextNumber).padStart(4, '0')}`
 
-      return await db.salesOrder.create({
+      return await prisma.salesOrder.create({
         data: {
           orderNumber,
           customerId: input.customerId,
@@ -113,7 +113,7 @@ export const ordersRouter = router({
       status: z.enum(['PENDING', 'CONFIRMED', 'FULFILLED', 'CANCELLED']),
     }))
     .mutation(async ({ input }) => {
-      return await db.salesOrder.update({
+      return await prisma.salesOrder.update({
         where: { id: input.id },
         data: { status: input.status }
       })
@@ -122,7 +122,7 @@ export const ordersRouter = router({
   convertToBill: protectedProcedure
     .input(z.string())
     .mutation(async ({ input, ctx }) => {
-      const order = await db.salesOrder.findUnique({
+      const order = await prisma.salesOrder.findUnique({
         where: { id: input },
         include: { items: true }
       })
@@ -132,10 +132,10 @@ export const ordersRouter = router({
       }
 
       // Get next bill number
-      const settings = await db.companySettings.findFirst()
+      const settings = await prisma.companySettings.findFirst()
       const prefix = settings?.invoicePrefix || 'INV'
       
-      const lastBill = await db.salesBill.findFirst({
+      const lastBill = await prisma.salesBill.findFirst({
         orderBy: { billNumber: 'desc' },
         where: { billNumber: { startsWith: prefix } }
       })
@@ -148,7 +148,7 @@ export const ordersRouter = router({
 
       const billNumber = `${prefix}${String(nextNumber).padStart(4, '0')}`
 
-      return await db.$transaction(async (tx) => {
+      return await prisma.$transaction(async (tx) => {
         // Create bill from order
         const bill = await tx.salesBill.create({
           data: {

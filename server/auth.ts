@@ -1,7 +1,7 @@
 // server/auth.ts
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
-import { db } from './db'
+import { prisma } from './db'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 
@@ -29,7 +29,7 @@ export const getUser = async (token: string) => {
   const decoded = verifyToken(token)
   if (!decoded) return null
   
-  return await db.user.findUnique({
+  return await prisma.user.findUnique({
     where: { id: decoded.userId },
     select: { id: true, email: true, name: true, role: true }
   })

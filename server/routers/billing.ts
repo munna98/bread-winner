@@ -1,7 +1,7 @@
 // server/routers/billing.ts
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc'
-import { db } from '../db'
+import { prisma } from '../db'
 import { TRPCError } from '@trpc/server'
 
 const billItemSchema = z.object({
@@ -40,7 +40,7 @@ export const billingRouter = router({
       }
 
       const [bills, total] = await Promise.all([
-        db.salesBill.findMany({
+        prisma.salesBill.findMany({
           where,
           include: {
             customer: { select: { name: true } },
@@ -54,7 +54,7 @@ export const billingRouter = router({
           take: input.limit,
           orderBy: { billDate: 'desc' },
         }),
-        db.salesBill.count({ where })
+        prisma.salesBill.count({ where })
       ])
 
       return { bills, total, pages: Math.ceil(total / input.limit) }
@@ -63,7 +63,7 @@ export const billingRouter = router({
   getById: protectedProcedure
     .input(z.string())
     .query(async ({ input }) => {
-      return await db.salesBill.findUnique({
+      return await prisma.salesBill.findUnique({
         where: { id: input },
         include: {
           customer: true,
@@ -78,10 +78,10 @@ export const billingRouter = router({
 
   getNextBillNumber: protectedProcedure
     .query(async () => {
-      const settings = await db.companySettings.findFirst()
+      const settings = await prisma.companySettings.findFirst()
       const prefix = settings?.invoicePrefix || 'INV'
       
-      const lastBill = await db.salesBill.findFirst({
+      const lastBill = await prisma.salesBill.findFirst({
         orderBy: { billNumber: 'desc' },
         where: {
           billNumber: { startsWith: prefix }
@@ -114,7 +114,7 @@ export const billingRouter = router({
       
       const balanceAmount = input.total - input.paidAmount
 
-      return await db.$transaction(async (tx) => {
+      return await prisma.$transaction(async (tx) => {
         // Create sales bill
         const bill = await tx.salesBill.create({
           data: {
@@ -193,7 +193,7 @@ export const billingRouter = router({
       const { id, ...updateData } = input
       const balanceAmount = input.total - input.paidAmount
 
-      return await db.$transaction(async (tx) => {
+      return await prisma.$transaction(async (tx) => {
         // Delete existing items
         await tx.salesBillItem.deleteMany({
           where: { salesBillId: id }
@@ -237,7 +237,7 @@ export const billingRouter = router({
   delete: protectedProcedure
     .input(z.string())
     .mutation(async ({ input }) => {
-      return await db.salesBill.update({
+      return await prisma.salesBill.update({
         where: { id: input },
         data: { status: 'CANCELLED' }
       })

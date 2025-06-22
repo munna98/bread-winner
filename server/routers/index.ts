@@ -9,8 +9,8 @@ import { purchasesRouter } from './purchases'
 import { expensesRouter } from './expenses'
 import { productionRouter } from './production'
 import { accountsRouter } from './accounts'
-import { reportsRouter } from './reports'
-import { settingsRouter } from './settings'
+// import { reportsRouter } from './reports'
+// import { settingsRouter } from './settings'
 
 export const appRouter = router({
   auth: authRouter,
@@ -22,8 +22,8 @@ export const appRouter = router({
   expenses: expensesRouter,
   production: productionRouter,
   accounts: accountsRouter,
-  reports: reportsRouter,
-  settings: settingsRouter,
+  // reports: reportsRouter,
+  // settings: settingsRouter,
 })
 
 export type AppRouter = typeof appRouter

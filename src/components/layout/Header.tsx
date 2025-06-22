@@ -25,9 +25,8 @@ import {
   DropdownMenuSubTrigger,
 } from '../ui/dropdown-menu'
 import { Badge } from '../ui/badge'
-import { useAuth } from '../../contexts/AuthContext'
-import { useTheme } from '../../contexts/ThemeContext'
-
+import { useAuth } from '@/context/AuthContext'
+import { useTheme } from '@/context/ThemeContext'
 interface HeaderProps {
   onMenuClick: () => void
 }
@@ -209,6 +208,7 @@ const Header = ({ onMenuClick }: HeaderProps) => {
       </div>
     </header>
   )
+
 }
 
 export default Header

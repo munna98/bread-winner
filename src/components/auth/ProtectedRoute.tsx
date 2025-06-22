@@ -1,6 +1,6 @@
 import { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../../contexts/AuthContext'
+import { useAuth } from '@/context/AuthContext'
 import { hasRole, type User } from '../../lib/auth'
 import { Loader2 } from 'lucide-react'
 

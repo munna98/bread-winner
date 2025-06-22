@@ -1,0 +1,21 @@
+// tsconfig.node.json
+{
+  "compilerOptions": {
+    "composite": true, // Often true for referenced projects
+    "module": "ESNext", // Or "CommonJS" depending on your Node.js setup
+    "moduleResolution": "Node", // Important for Node.js environments
+    "allowSyntheticDefaultImports": true, // Common with ES Modules in Node
+    "target": "ES2020",
+    "lib": ["ES2020"], // Only Node.js libs, not DOM
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true, // Important for transpilers like Vite/esbuild
+    "noEmit": true, // If this config is just for type-checking and another tool handles actual emit
+    "rootDir": ".",
+    "outDir": "./dist", // If you want to emit JS
+  },
+  "include": ["electron", "server"], // Specify which files this config should compile
+  "exclude": ["node_modules", "dist"]
+}

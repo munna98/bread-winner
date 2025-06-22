@@ -1,27 +1,27 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { Toaster } from 'sonner'
+// import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+// import { Toaster } from 'sonner'
 import { trpc, trpcClient, queryClient } from './lib/trpc'
-import { AuthProvider } from './contexts/AuthContext'
-import { ThemeProvider } from './contexts/ThemeContext'
+import { AuthProvider } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import Layout from './components/layout/Layout'
 
 // Pages
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
-import BillingPage from './pages/billing/BillingPage'
-import BillHistory from './pages/billing/BillHistory'
-import CustomersPage from './pages/customers/CustomersPage'
-import ProductsPage from './pages/products/ProductsPage'
-import OrdersPage from './pages/orders/OrdersPage'
-import PurchasesPage from './pages/purchases/PurchasesPage'
-import ExpensesPage from './pages/expenses/ExpensesPage'
-import ProductionPage from './pages/production/ProductionPage'
-import AccountsPage from './pages/accounts/AccountsPage'
-import ReportsPage from './pages/reports/ReportsPage'
-import SettingsPage from './pages/settings/SettingsPage'
+// import BillingPage from './pages/billing/BillingPage'
+// import BillHistory from './pages/billing/BillHistory'
+// import CustomersPage from './pages/customers/CustomersPage'
+// import ProductsPage from './pages/products/ProductsPage'
+// import OrdersPage from './pages/orders/OrdersPage'
+// import PurchasesPage from './pages/purchases/PurchasesPage'
+// import ExpensesPage from './pages/expenses/ExpensesPage'
+// import ProductionPage from './pages/production/ProductionPage'
+// import AccountsPage from './pages/accounts/AccountsPage'
+// import ReportsPage from './pages/reports/ReportsPage'
+// import SettingsPage from './pages/settings/SettingsPage'
 
 function App() {
   return (
@@ -51,7 +51,7 @@ function App() {
                       </Layout>
                     </ProtectedRoute>
                   } />
-                  
+{/*                   
                   <Route path="/billing" element={
                     <ProtectedRoute requiredRole="CASHIER">
                       <Layout>
@@ -142,24 +142,24 @@ function App() {
                   
                   {/* Catch all route */}
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
+                </Routes> */
                 
                 {/* Toast notifications */}
-                <Toaster 
+                {/* <Toaster 
                   position="top-right" 
                   richColors 
                   closeButton
                   duration={4000}
-                />
+                /> */}
               </div>
             </Router>
           </AuthProvider>
         </ThemeProvider>
         
         {/* React Query DevTools - only in development */}
-        {process.env.NODE_ENV === 'development' && (
+        {/* {process.env.NODE_ENV === 'development' && (
           <ReactQueryDevtools initialIsOpen={false} />
-        )}
+        )} */}
       </QueryClientProvider>
     </trpc.Provider>
   )

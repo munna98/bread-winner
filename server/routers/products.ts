@@ -1,7 +1,7 @@
 // server/routers/products.ts
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc'
-import { db } from '../db'
+import { prisma } from '../db'
 
 export const productsRouter = router({
   getAll: protectedProcedure
@@ -23,13 +23,13 @@ export const productsRouter = router({
       }
 
       const [products, total] = await Promise.all([
-        db.product.findMany({
+        prisma.product.findMany({
           where,
           skip: (input.page - 1) * input.limit,
           take: input.limit,
           orderBy: { name: 'asc' },
         }),
-        db.product.count({ where })
+        prisma.product.count({ where })
       ])
 
       return { products, total, pages: Math.ceil(total / input.limit) }
@@ -37,7 +37,7 @@ export const productsRouter = router({
 
   getCategories: protectedProcedure
     .query(async () => {
-      const categories = await db.product.findMany({
+      const categories = await prisma.product.findMany({
         where: { isActive: true },
         select: { category: true },
         distinct: ['category'],
@@ -54,7 +54,7 @@ export const productsRouter = router({
       costPrice: z.number().min(0).optional(),
     }))
     .mutation(async ({ input }) => {
-      return await db.product.create({
+      return await prisma.product.create({
         data: {
           ...input,
           sellingPrice: input.sellingPrice,
@@ -74,7 +74,7 @@ export const productsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input
-      return await db.product.update({
+      return await prisma.product.update({
         where: { id },
         data: {
           ...data,
@@ -87,7 +87,7 @@ export const productsRouter = router({
   delete: protectedProcedure
     .input(z.string())
     .mutation(async ({ input }) => {
-      return await db.product.update({
+      return await prisma.product.update({
         where: { id: input },
         data: { isActive: false }
       })

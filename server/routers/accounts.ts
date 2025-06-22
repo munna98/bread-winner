@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc'
-import { db } from '../db'
+import { prisma } from '../db'
 import { AccountType, VoucherType } from '@prisma/client'
 
 export const accountsRouter = router({
@@ -22,7 +22,7 @@ export const accountsRouter = router({
         })
       }
 
-      return await db.account.findMany({
+      return await prisma.account.findMany({
         where,
         include: {
           parent: true,
@@ -47,7 +47,7 @@ export const accountsRouter = router({
   // Get account hierarchy (parent accounts only)
   getHierarchy: protectedProcedure
     .query(async () => {
-      const accounts = await db.account.findMany({
+      const accounts = await prisma.account.findMany({
         where: { isActive: true },
         include: {
           children: {
@@ -79,7 +79,7 @@ export const accountsRouter = router({
   getById: protectedProcedure
     .input(z.string())
     .query(async ({ input }) => {
-      const account = await db.account.findUnique({
+      const account = await prisma.account.findUnique({
         where: { id: input },
         include: {
           parent: true,
@@ -106,12 +106,12 @@ export const accountsRouter = router({
       if (!account) return null
 
       // Calculate current balance
-      const debitTotal = await db.ledgerEntry.aggregate({
+      const debitTotal = await prisma.ledgerEntry.aggregate({
         where: { debitAccountId: input },
         _sum: { amount: true }
       })
 
-      const creditTotal = await db.ledgerEntry.aggregate({
+      const creditTotal = await prisma.ledgerEntry.aggregate({
         where: { creditAccountId: input },
         _sum: { amount: true }
       })
@@ -144,7 +144,7 @@ export const accountsRouter = router({
       openingBalance: z.number().default(0),
     }))
     .mutation(async ({ input }) => {
-      return await db.account.create({
+      return await prisma.account.create({
         data: {
           ...input,
           openingBalance: input.openingBalance,
@@ -163,7 +163,7 @@ export const accountsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input
-      return await db.account.update({
+      return await prisma.account.update({
         where: { id },
         data: {
           ...data,
@@ -177,7 +177,7 @@ export const accountsRouter = router({
     .input(z.string())
     .mutation(async ({ input }) => {
       // Check if account has entries
-      const hasEntries = await db.ledgerEntry.findFirst({
+      const hasEntries = await prisma.ledgerEntry.findFirst({
         where: {
           OR: [
             { debitAccountId: input },
@@ -188,13 +188,13 @@ export const accountsRouter = router({
 
       if (hasEntries) {
         // Soft delete if has entries
-        return await db.account.update({
+        return await prisma.account.update({
           where: { id: input },
           data: { isActive: false }
         })
       } else {
         // Hard delete if no entries
-        return await db.account.delete({
+        return await prisma.account.delete({
           where: { id: input }
         })
       }
@@ -230,7 +230,7 @@ export const accountsRouter = router({
       }
 
       const [entries, total] = await Promise.all([
-        db.ledgerEntry.findMany({
+        prisma.ledgerEntry.findMany({
           where,
           include: {
             debitAccount: { select: { name: true, accountType: true } },
@@ -245,7 +245,7 @@ export const accountsRouter = router({
             { createdAt: 'desc' }
           ],
         }),
-        db.ledgerEntry.count({ where })
+        prisma.ledgerEntry.count({ where })
       ])
 
       return { entries, total, pages: Math.ceil(total / input.limit) }
@@ -264,7 +264,7 @@ export const accountsRouter = router({
       reference: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      return await db.ledgerEntry.create({
+      return await prisma.ledgerEntry.create({
         data: {
           ...input,
           amount: input.amount,
@@ -283,7 +283,7 @@ export const accountsRouter = router({
       asOfDate: z.date().optional(),
     }))
     .query(async ({ input }) => {
-      const account = await db.account.findUnique({
+      const account = await prisma.account.findUnique({
         where: { id: input.accountId },
         select: { 
           name: true, 
@@ -301,14 +301,14 @@ export const accountsRouter = router({
       }
 
       const [debitTotal, creditTotal] = await Promise.all([
-        db.ledgerEntry.aggregate({
+        prisma.ledgerEntry.aggregate({
           where: { 
             debitAccountId: input.accountId,
             ...whereClause
           },
           _sum: { amount: true }
         }),
-        db.ledgerEntry.aggregate({
+        prisma.ledgerEntry.aggregate({
           where: { 
             creditAccountId: input.accountId,
             ...whereClause
@@ -343,7 +343,7 @@ export const accountsRouter = router({
       asOfDate: z.date().optional(),
     }))
     .query(async ({ input }) => {
-      const accounts = await db.account.findMany({
+      const accounts = await prisma.account.findMany({
         where: { isActive: true },
         select: {
           id: true,
@@ -364,14 +364,14 @@ export const accountsRouter = router({
       const trialBalance = await Promise.all(
         accounts.map(async (account) => {
           const [debitTotal, creditTotal] = await Promise.all([
-            db.ledgerEntry.aggregate({
+            prisma.ledgerEntry.aggregate({
               where: { 
                 debitAccountId: account.id,
                 ...whereClause
               },
               _sum: { amount: true }
             }),
-            db.ledgerEntry.aggregate({
+            prisma.ledgerEntry.aggregate({
               where: { 
                 creditAccountId: account.id,
                 ...whereClause

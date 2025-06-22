@@ -1,7 +1,7 @@
 // server/routers/purchases.ts
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc'
-import { db } from '../db'
+import { prisma } from '../db'
 
 const purchaseItemSchema = z.object({
   productId: z.string().optional(),
@@ -32,7 +32,7 @@ export const purchasesRouter = router({
       }
 
       const [purchases, total] = await Promise.all([
-        db.purchase.findMany({
+        prisma.purchase.findMany({
           where,
           include: {
             supplier: { select: { name: true } },
@@ -42,7 +42,7 @@ export const purchasesRouter = router({
           take: input.limit,
           orderBy: { purchaseDate: 'desc' },
         }),
-        db.purchase.count({ where })
+        prisma.purchase.count({ where })
       ])
 
       return { purchases, total, pages: Math.ceil(total / input.limit) }
@@ -62,10 +62,10 @@ export const purchasesRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const settings = await db.companySettings.findFirst()
+      const settings = await prisma.companySettings.findFirst()
       const prefix = settings?.purchasePrefix || 'PUR'
       
-      const lastPurchase = await db.purchase.findFirst({
+      const lastPurchase = await prisma.purchase.findFirst({
         orderBy: { purchaseNumber: 'desc' },
         where: { purchaseNumber: { startsWith: prefix } }
       })
@@ -79,7 +79,7 @@ export const purchasesRouter = router({
       const purchaseNumber = `${prefix}${String(nextNumber).padStart(4, '0')}`
       const balanceAmount = input.total - input.paidAmount
 
-      return await db.purchase.create({
+      return await prisma.purchase.create({
         data: {
           purchaseNumber,
           supplierId: input.supplierId,
